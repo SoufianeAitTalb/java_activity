@@ -45,7 +45,7 @@ public class ProductManager {
 
         List<Review> reviews = products.get(product);
 
-        products.remove(product, reviews); //fixme
+//        products.remove(product, reviews); //fixme
 
 
         reviews.add(new Review(rating, comments));
@@ -66,7 +66,12 @@ public class ProductManager {
     }
 
 
-    public void printProductReport() {
+    public void printProductReport(Product product) {
+
+
+        List<Review> reviews = products.get(product);
+
+
 
         StringBuilder txt = new StringBuilder();
         String type = (product instanceof Food) ? resources.getString("food") : resources.getString("drink");
@@ -77,9 +82,7 @@ public class ProductManager {
 
 
         for (Review review : reviews) {
-            if (review == null) {
-                break;
-            }
+
             txt.append(MessageFormat.format(resources.getString("review"), review.rating().getStars(), review.comments()));
             txt.append("\n");
 
@@ -87,7 +90,7 @@ public class ProductManager {
         }
 
 
-        if (reviews[0] == null) {
+        if (reviews.isEmpty()) {
             txt.append(resources.getString("no.reviews"));
 
             txt.append("\n");

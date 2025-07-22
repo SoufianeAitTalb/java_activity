@@ -5,7 +5,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Objects;
 
-public sealed abstract class Product permits Drink, Food {
+public sealed abstract class Product implements Reteable<Product> permits Drink, Food {
 
     public static final BigDecimal DISCOUNT_RATE = new BigDecimal("0.1");
 

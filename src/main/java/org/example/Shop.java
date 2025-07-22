@@ -3,14 +3,15 @@ package org.example;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Locale;
 
 public class Shop {
 
     public static void main(String[] args) {
 
-        ProductManager pm = new ProductManager();
+        ProductManager pm = new ProductManager(Locale.UK);
 
-        Product p1 = pm.createProduct(101, "Tea", BigDecimal.valueOf(1.99), Rating.NOT_RATED);
+        Product p1 = pm.createProduct(101, "Tea", BigDecimal.valueOf(1.99), Rating.NOT_RATED, LocalDate.now());
 
 
         pm.printProductReport();

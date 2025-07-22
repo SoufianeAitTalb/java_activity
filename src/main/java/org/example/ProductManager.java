@@ -6,13 +6,11 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.Locale;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class ProductManager {
 
-    private Product product;
-    private Review review;
+    private Map<Product, List<Review>> products = new HashMap<>();
 
     private Locale locale;
     private ResourceBundle resources;
@@ -31,20 +29,40 @@ public class ProductManager {
     }
 
     public Product createProduct(int id, String name, BigDecimal price, Rating rating, LocalDate bestBefore) {
-        product = new Food(id, name, price, rating, bestBefore);
+        Product product = new Food(id, name, price, rating, bestBefore);
+        products.putIfAbsent(product, new ArrayList<>());
         return product;
     }
 
     public Product createProduct(int id, String name, BigDecimal price, Rating rating) {
-        product = new Drink(id, name, price, rating);
+        Product product = new Drink(id, name, price, rating);
+        products.putIfAbsent(product, new ArrayList<>());
+
         return product;
     }
 
     public Product reviewProduct(Product product, Rating rating, String comments) {
-        review = new Review(rating, comments);
-        this.product = product.applyRating(rating);
 
-        return this.product;
+        List<Review> reviews = products.get(product);
+
+        products.remove(product, reviews); //fixme
+
+
+        reviews.add(new Review(rating, comments));
+        int sum = 0;
+
+
+        for (Review review : reviews) {
+            sum += review.rating().ordinal();
+        }
+
+
+        product = product.applyRating(Reteable.convert(Math.round((float) sum / reviews.size())));  //fixme review please page 192
+
+
+        products.put(product, reviews);
+
+        return product;
     }
 
 
@@ -54,19 +72,26 @@ public class ProductManager {
         String type = (product instanceof Food) ? resources.getString("food") : resources.getString("drink");
 
 
-//        txt.append(product);
-
         txt.append(MessageFormat.format(resources.getString("product"), product.getName(), moneyFormat.format(product.getPrice()), product.getRating().getStars(), dateFormat.format(product.getBestBefore()), type));
         txt.append("\n");
 
-        if (review != null) {
-//            txt.append(review);
 
+        for (Review review : reviews) {
+            if (review == null) {
+                break;
+            }
             txt.append(MessageFormat.format(resources.getString("review"), review.rating().getStars(), review.comments()));
-        } else {
-            txt.append(resources.getString("no.reviews"));
+            txt.append("\n");
+
+
         }
-        txt.append("\n");
+
+
+        if (reviews[0] == null) {
+            txt.append(resources.getString("no.reviews"));
+
+            txt.append("\n");
+        }
 
         System.out.println(txt);
     }

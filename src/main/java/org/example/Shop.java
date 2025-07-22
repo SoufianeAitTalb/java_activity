@@ -17,6 +17,11 @@ public class Shop {
         pm.printProductReport();
 
         pm.reviewProduct(p1, Rating.FOUR_STAR, "Nice hot cup of tea");
+        pm.reviewProduct(p1, Rating.TWO_STAR, "Rather weak tea");
+        pm.reviewProduct(p1, Rating.FOUR_STAR, "Fine tea");
+        pm.reviewProduct(p1, Rating.FOUR_STAR, "Good tea");
+        pm.reviewProduct(p1, Rating.FIVE_STAR, "Perfect tea");
+        pm.reviewProduct(p1, Rating.THREE_STAR, "Just add some lemon");
 
 
         pm.printProductReport();

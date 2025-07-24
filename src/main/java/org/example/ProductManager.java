@@ -58,7 +58,11 @@ public class ProductManager {
 
 
     public ProductManager(Locale locale) {
+        this(locale.toLanguageTag());
+    }
 
+    public ProductManager(String languageTag) {
+        changeLocale(languageTag);
     }
 
 
@@ -67,7 +71,7 @@ public class ProductManager {
     }
 
 
-    public static Set<String> getSupprtedLocales() {
+    public static Set<String> getSupportedLocales() {
         return formatters.keySet();
     }
 
@@ -142,27 +146,35 @@ public class ProductManager {
         StringBuilder txt = new StringBuilder();
 
 
-        txt.append(MessageFormat.format(resources.getString("product"), product.getName(), moneyFormat.format(product.getPrice()), product.getRating().getStars(), dateFormat.format(product.getBestBefore()), type));
+        txt.append(formatter.formatProduct(product));
         txt.append("\n");
 
 
         for (Review review : reviews) {
 
-            txt.append(MessageFormat.format(resources.getString("review"), review.rating().getStars(), review.comments()));
+            txt.append(formatter.formatReview(review));
             txt.append("\n");
 
 
         }
-
-
         if (reviews.isEmpty()) {
-            txt.append(resources.getString("no.reviews"));
+            txt.append(formatter.getText("no.reviews"));
 
             txt.append("\n");
         }
 
         System.out.println(txt);
     }
-
+    
+    public void printProducts(Comparator<Product> sorter) {
+        List<Product> productList = new ArrayList<>(products.keySet());
+        productList.sort(sorter);
+        StringBuilder txt = new StringBuilder();
+        for (Product product : productList) {
+            txt.append(formatter.formatProduct(product));
+            txt.append('\n');
+        }
+        System.out.println(txt);
+    }
 
 }

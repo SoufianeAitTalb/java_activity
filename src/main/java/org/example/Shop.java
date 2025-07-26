@@ -3,6 +3,7 @@ package org.example;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Locale;
 
 public class Shop {
@@ -65,6 +66,14 @@ public class Shop {
 
 
         pm.printProducts((pOne, pTwo) -> pTwo.getRating().ordinal() - pOne.getRating().ordinal());
+
+        pm.printProducts((pOne,pTwo)-> pTwo.getPrice().compareTo(pOne.getPrice()));
+
+        Comparator<Product> ratingSorter = (pOne,pTwo)-> pTwo.getRating().ordinal() - pOne.getRating().ordinal();
+        Comparator<Product> priceSorter = (pOne,pTwo)-> (pTwo.getPrice().compareTo(pOne.getPrice()));
+
+        pm.printProducts(ratingSorter.thenComparing(priceSorter));
+        pm.printProducts(ratingSorter.thenComparing(priceSorter).reversed());
 
     }
 

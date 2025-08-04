@@ -15,9 +15,7 @@ public class Shop {
         pm.parseProduct("D,101,Tea,1.99,0,2021-09-21");
 
 
-
-
-        pm.printProductReport(101);
+        //pm.printProductReport(101);
 
         pm.parseReview("101,4,Nice hot cup of tea");
         pm.reviewProduct(101, Rating.TWO_STAR, "Rather weak tea");
@@ -28,6 +26,10 @@ public class Shop {
 
 
         pm.printProductReport(101);
+
+        pm.parseProduct("F,103,Cake,3.99,0,2021-09-21");
+        pm.printProductReport(103);
+
 
 //
 //        Product p2 = pm.createProduct(102, "Coffee", BigDecimal.valueOf(1.99), Rating.NOT_RATED);

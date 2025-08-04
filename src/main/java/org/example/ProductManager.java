@@ -1,7 +1,14 @@
 package org.example;
 
 import java.awt.color.ProfileDataException;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -53,10 +60,12 @@ public class ProductManager {
     }
 
     private ResourceBundle config = ResourceBundle.getBundle("config");
-    private MessageFormat reviewFormat  = new MessageFormat(config.getString("review.data.format"));
-    private MessageFormat productFormat  = new MessageFormat(config.getString("product.data.format"));
+    private MessageFormat reviewFormat = new MessageFormat(config.getString("review.data.format"));
+    private MessageFormat productFormat = new MessageFormat(config.getString("product.data.format"));
+    private Path reportsFolder = Path.of(config.getString("reports.folder"));
+    private Path dataFolder = Path.of(config.getString("data.folder"));
+    private Path tempFolder = Path.of(config.getString("temp.folder"));
     private ResourceFormatter formatter;
-
 
 
     private static Map<String, ResourceFormatter> formatters = Map.of(
@@ -105,16 +114,14 @@ public class ProductManager {
     public Product findProduct(int id) throws ProductManagerException {
 
 
-
-
-        return products.keySet().stream().filter(product -> product.getId() == id).findFirst().orElseThrow(()-> new ProductManagerException("Product with id "+id+" not found"));
+        return products.keySet().stream().filter(product -> product.getId() == id).findFirst().orElseThrow(() -> new ProductManagerException("Product with id " + id + " not found"));
     }
 
     public Product reviewProduct(int id, Rating rating, String comments) {
         try {
             return reviewProduct(findProduct(id), rating, comments);
         } catch (ProductManagerException e) {
-            logger.log(Level.INFO,e.getMessage());
+            logger.log(Level.INFO, e.getMessage());
             return null;
         }
     }
@@ -123,7 +130,6 @@ public class ProductManager {
     public Product reviewProduct(Product product, Rating rating, String comments) {
 
         List<Review> reviews = products.get(product);
-
 
 
         reviews.add(new Review(rating, comments));
@@ -138,8 +144,7 @@ public class ProductManager {
 //        product = product.applyRating(Reteable.convert(Math.round((float) sum / reviews.size())));
 
 
-        product = product.applyRating(Reteable.convert((int)Math.round(reviews.stream().mapToInt(review -> review.rating().ordinal()).average().orElse(0))));
-
+        product = product.applyRating(Reteable.convert((int) Math.round(reviews.stream().mapToInt(review -> review.rating().ordinal()).average().orElse(0))));
 
 
         products.put(product, reviews);
@@ -152,11 +157,13 @@ public class ProductManager {
         try {
             printProductReport(findProduct(id));
         } catch (ProductManagerException e) {
-            logger.log(Level.INFO,e.getMessage());
+            logger.log(Level.INFO, e.getMessage());
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Error printing product report " + e.getMessage(), e);
         }
     }
 
-    public void printProductReport(Product product) {
+    public void printProductReport(Product product) throws IOException {
 
 
         List<Review> reviews = products.get(product);
@@ -164,47 +171,37 @@ public class ProductManager {
 
         Collections.sort(reviews);
 
-        StringBuilder txt = new StringBuilder();
+
+        Collections.sort(reviews);
+        Path productFile = reportsFolder.resolve(MessageFormat.format(config.getString("report.file"), product.getId()));
 
 
-        txt.append(formatter.formatProduct(product));
-        txt.append("\n");
+        try (PrintWriter out = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(productFile, StandardOpenOption.CREATE), StandardCharsets.UTF_8))) {
+            out.append(formatter.formatProduct(product) + System.lineSeparator());
+
+            if (reviews.isEmpty()) {
+                out.append(formatter.getText("no.reviews") + System.lineSeparator());
+            } else {
 
 
-//        for (Review review : reviews) {
-//
-//            txt.append(formatter.formatReview(review));
-//            txt.append("\n");
-//
-//
-//        }
-//        if (reviews.isEmpty()) {
-//            txt.append(formatter.getText("no.reviews"));
-//
-//            txt.append("\n");
-//        }
+                out.append(reviews.stream().map(review -> formatter.formatReview(review) + System.lineSeparator()).collect(Collectors.joining()));
 
-        if (reviews.isEmpty()) {
-            txt.append(formatter.getText("no.reviews") + '\n');
-        } else {
-
-
-
-            txt.append(reviews.stream().map(review -> formatter.formatReview(review) +"\n").collect(Collectors.joining()));
-
+            }
+            System.out.println(out);
+        } catch (Exception e) {
+            System.out.println("Error writing product report: " + e.getMessage());
         }
 
-
-        System.out.println(txt);
+        System.out.println("Product report for " + product.getName() + " saved to " + productFile.toAbsolutePath());
     }
-    
+
     public void printProducts(Predicate<Product> filer, Comparator<Product> sorter) {
 
         StringBuilder txt = new StringBuilder();
 
         products.keySet().stream().sorted(sorter).filter(filer).forEach(product ->
         {
-txt.append(formatter.formatProduct(product)).append('\n');
+            txt.append(formatter.formatProduct(product)).append('\n');
         });
         System.out.println(txt);
     }
@@ -214,14 +211,15 @@ txt.append(formatter.formatProduct(product)).append('\n');
             Object[] values = reviewFormat.parse(text);
 
 
-            reviewProduct(Integer.parseInt((String) values[0]), Reteable.convert(Integer.parseInt((String) values[1])), (String)values[2]);
+            reviewProduct(Integer.parseInt((String) values[0]), Reteable.convert(Integer.parseInt((String) values[1])), (String) values[2]);
 
 
         } catch (ParseException | NumberFormatException e) {
-logger.log(Level.WARNING,"Error parsing review "+text+" "+e.getMessage());
+            logger.log(Level.WARNING, "Error parsing review " + text + " " + e.getMessage());
         }
     }
-    public void parseProduct(String text){
+
+    public void parseProduct(String text) {
         try {
             Object[] values = productFormat.parse(text);
 
@@ -230,18 +228,20 @@ logger.log(Level.WARNING,"Error parsing review "+text+" "+e.getMessage());
             BigDecimal price = BigDecimal.valueOf(Double.parseDouble((String) values[3]));
             Rating rating = Reteable.convert(Integer.parseInt((String) values[4]));
 
-            switch((String) values[0]){
-                case "D":   createProduct(id,name,price,rating); break;
+            switch ((String) values[0]) {
+                case "D":
+                    createProduct(id, name, price, rating);
+                    break;
                 case "F":
-                    LocalDate bestBefore = LocalDate.parse((String)values[5]);
-                    createProduct(id,name,price,rating,bestBefore);
+                    LocalDate bestBefore = LocalDate.parse((String) values[5]);
+                    createProduct(id, name, price, rating, bestBefore);
             }
         } catch (ParseException | NumberFormatException | DateTimeParseException e) {
-            logger.log(Level.WARNING,"Error parsing product "+text+" "+e.getMessage());
+            logger.log(Level.WARNING, "Error parsing product " + text + " " + e.getMessage());
         }
     }
 
-    public Map<String,String> getDiscounts(){
+    public Map<String, String> getDiscounts() {
         return products.keySet()
                 .stream()
                 .collect(
@@ -256,7 +256,6 @@ logger.log(Level.WARNING,"Error parsing review "+text+" "+e.getMessage());
                         )
                 );
     }
-
 
 
 }

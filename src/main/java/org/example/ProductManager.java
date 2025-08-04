@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -86,6 +87,7 @@ public class ProductManager {
 
     public ProductManager(String languageTag) {
         changeLocale(languageTag);
+        loadAllData();
     }
 
 
@@ -206,20 +208,63 @@ public class ProductManager {
         System.out.println(txt);
     }
 
-    public void parseReview(String text) {
+    private void loadAllData() {
+        try {
+            products = Files.list(dataFolder).filter(file -> file.getFileName().startsWith("product")).map(file -> loadProduct(file)).filter(product -> product != null).collect(Collectors.toMap(product -> product, product -> loadReviews(product)));
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Error loading data " + e.getMessage(), e);
+        }
+    }
+
+    private Product loadProduct(Path file) {
+        Product product = null;
+
+
+        try {
+            product = parseProduct(Files.lines(dataFolder.resolve(file), Charset.forName("UTF-8")).findFirst().orElseThrow());
+        } catch (Exception e) {
+
+            logger.log(Level.WARNING, "Error loading product " + e.getMessage());
+        }
+        return product;
+    }
+
+    private List<Review> loadReviews(Product product) {
+        List<Review> reviews = null;
+
+
+        Path file = dataFolder.resolve(MessageFormat.format(config.getString("reviews.data.file"), product.getId()));
+        if (Files.notExists(file)) {
+
+            reviews = new ArrayList<>();
+        } else {
+            try {
+                reviews = Files.lines(file, Charset.forName("UTF-8")).map(text -> parseReview(text)).filter(review -> review != null).collect(Collectors.toList());
+            } catch (IOException e) {
+                logger.log(Level.SEVERE, "Error loading reviews " + e.getMessage());
+            }
+        }
+        return reviews;
+    }
+
+    private Review parseReview(String text) {
+        Review review = null;
         try {
             Object[] values = reviewFormat.parse(text);
 
 
-            reviewProduct(Integer.parseInt((String) values[0]), Reteable.convert(Integer.parseInt((String) values[1])), (String) values[2]);
+            review = new Review(Reteable.convert(Integer.parseInt((String) values[0])), (String) values[1]);
 
 
         } catch (ParseException | NumberFormatException e) {
             logger.log(Level.WARNING, "Error parsing review " + text + " " + e.getMessage());
         }
+
+        return review;
     }
 
-    public void parseProduct(String text) {
+    private Product parseProduct(String text) {
+        Product product = null;
         try {
             Object[] values = productFormat.parse(text);
 
@@ -230,15 +275,18 @@ public class ProductManager {
 
             switch ((String) values[0]) {
                 case "D":
-                    createProduct(id, name, price, rating);
+                    product = new Drink(id, name, price, rating);
                     break;
                 case "F":
                     LocalDate bestBefore = LocalDate.parse((String) values[5]);
-                    createProduct(id, name, price, rating, bestBefore);
+                    product = new Food(id, name, price, rating, bestBefore);
             }
         } catch (ParseException | NumberFormatException | DateTimeParseException e) {
             logger.log(Level.WARNING, "Error parsing product " + text + " " + e.getMessage());
         }
+
+
+        return product;
     }
 
     public Map<String, String> getDiscounts() {

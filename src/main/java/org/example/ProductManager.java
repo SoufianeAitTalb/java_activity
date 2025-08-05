@@ -1,9 +1,7 @@
 package org.example;
 
 import java.awt.color.ProfileDataException;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -13,6 +11,7 @@ import java.nio.file.StandardOpenOption;
 import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -208,6 +207,46 @@ public class ProductManager {
         System.out.println(txt);
     }
 
+
+    @SuppressWarnings("unchecked")
+    private void restoreData() {
+        try {
+
+            Path tempFile = Files.list(tempFolder).filter(path -> path.getFileName().toString().endsWith("tmp")).findFirst().orElseThrow();
+
+
+            try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(tempFile, StandardOpenOption.DELETE_ON_CLOSE))) {
+                products = (HashMap) in.readObject();
+            }
+
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error restoring data " + e.getMessage(), e);
+        }
+    }
+
+    private void dumpData() {
+        try {
+            if (Files.notExists(tempFolder)) {
+                Files.createDirectory(tempFolder);
+            }
+
+            Path tempFile = tempFolder.resolve(
+
+                    MessageFormat.format(config.getString("temp.file"), Instant.now().getEpochSecond())
+            );
+
+            try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(tempFile, StandardOpenOption.CREATE))) {
+                out.writeObject(products);
+                products = new HashMap<>();
+            }
+
+
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Error dumping data " + e.getMessage(), e);
+        }
+    }
+
     private void loadAllData() {
         try {
             products = Files.list(dataFolder).filter(file -> file.getFileName().startsWith("product")).map(file -> loadProduct(file)).filter(product -> product != null).collect(Collectors.toMap(product -> product, product -> loadReviews(product)));
@@ -221,7 +260,7 @@ public class ProductManager {
 
 
         try {
-            product = parseProduct(Files.lines(dataFolder.resolve(file), Charset.forName("UTF-8")).findFirst().orElseThrow());
+            product = parseProduct(Files.lines(dataFolder.resolve(file), StandardCharsets.UTF_8).findFirst().orElseThrow());
         } catch (Exception e) {
 
             logger.log(Level.WARNING, "Error loading product " + e.getMessage());
@@ -239,7 +278,7 @@ public class ProductManager {
             reviews = new ArrayList<>();
         } else {
             try {
-                reviews = Files.lines(file, Charset.forName("UTF-8")).map(text -> parseReview(text)).filter(review -> review != null).collect(Collectors.toList());
+                reviews = Files.lines(file, StandardCharsets.UTF_8).map(text -> parseReview(text)).filter(review -> review != null).collect(Collectors.toList());
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "Error loading reviews " + e.getMessage());
             }

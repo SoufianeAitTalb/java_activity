@@ -4,17 +4,15 @@ package org.example;
  * @author SOUFIANE
  **/
 public class ProductManagerException extends Exception {
-
-
-    public ProductManagerException(){
-super();
+    public ProductManagerException() {
+        super();
     }
 
-    public ProductManagerException(String message){
+    public ProductManagerException(String message) {
         super(message);
     }
 
-    public ProductManagerException(String message,Throwable cause){
-        super(message,cause);
+    public ProductManagerException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

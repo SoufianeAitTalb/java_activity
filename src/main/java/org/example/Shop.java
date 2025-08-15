@@ -9,10 +9,7 @@ import java.util.Locale;
 public class Shop {
 
     public static void main(String[] args) {
-
-        ProductManager pm = new ProductManager("en-GB");
-        
-
+        ProductManager pm = ProductManager.getInstance();
     }
 
     public static boolean isParagism(String mot1, String mot2) {

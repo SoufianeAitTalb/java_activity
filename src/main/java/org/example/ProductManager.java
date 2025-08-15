@@ -59,16 +59,16 @@ public class ProductManager {
 
     }
 
-    private ResourceBundle config = ResourceBundle.getBundle("config");
-    private MessageFormat reviewFormat = new MessageFormat(config.getString("review.data.format"));
-    private MessageFormat productFormat = new MessageFormat(config.getString("product.data.format"));
-    private Path reportsFolder = Path.of(config.getString("reports.folder"));
-    private Path dataFolder = Path.of(config.getString("data.folder"));
-    private Path tempFolder = Path.of(config.getString("temp.folder"));
+    private final ResourceBundle config = ResourceBundle.getBundle("config");
+    private final MessageFormat reviewFormat = new MessageFormat(config.getString("review.data.format"));
+    private final MessageFormat productFormat = new MessageFormat(config.getString("product.data.format"));
+    private final Path reportsFolder = Path.of(config.getString("reports.folder"));
+    private final Path dataFolder = Path.of(config.getString("data.folder"));
+    private final Path tempFolder = Path.of(config.getString("temp.folder"));
 //    private ResourceFormatter formatter;
 
 
-    private static Map<String, ResourceFormatter> formatters = Map.of(
+    private static final Map<String, ResourceFormatter> formatters = Map.of(
             "en-GB", new ResourceFormatter(Locale.UK),
             "en-US", new ResourceFormatter(Locale.US),
             "ru-RU", new ResourceFormatter(new Locale("ru", "RU")),
@@ -78,13 +78,14 @@ public class ProductManager {
     );
 
     private static final Logger logger = Logger.getLogger(ProductManager.class.getName());
+    private static final ProductManager pm = new ProductManager();
 
 
 //    public ProductManager(Locale locale) {
 //        this(locale.toLanguageTag());
 //    }
 
-    public ProductManager() {
+    private ProductManager() {
 //        changeLocale(languageTag);
         loadAllData();
     }
@@ -92,6 +93,11 @@ public class ProductManager {
 
     public ResourceFormatter changeLocale(String languageTag) {
         return formatters.getOrDefault(languageTag, formatters.get("en-GB"));
+    }
+
+
+    public static ProductManager getInstance() {
+        return pm;
     }
 
 

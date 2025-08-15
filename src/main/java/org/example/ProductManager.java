@@ -65,7 +65,7 @@ public class ProductManager {
     private Path reportsFolder = Path.of(config.getString("reports.folder"));
     private Path dataFolder = Path.of(config.getString("data.folder"));
     private Path tempFolder = Path.of(config.getString("temp.folder"));
-    private ResourceFormatter formatter;
+//    private ResourceFormatter formatter;
 
 
     private static Map<String, ResourceFormatter> formatters = Map.of(
@@ -80,18 +80,18 @@ public class ProductManager {
     private static final Logger logger = Logger.getLogger(ProductManager.class.getName());
 
 
-    public ProductManager(Locale locale) {
-        this(locale.toLanguageTag());
-    }
+//    public ProductManager(Locale locale) {
+//        this(locale.toLanguageTag());
+//    }
 
-    public ProductManager(String languageTag) {
-        changeLocale(languageTag);
+    public ProductManager() {
+//        changeLocale(languageTag);
         loadAllData();
     }
 
 
-    public void changeLocale(String languageTag) {
-        formatter = formatters.getOrDefault(languageTag, formatters.get("en-GB"));
+    public ResourceFormatter changeLocale(String languageTag) {
+        return formatters.getOrDefault(languageTag, formatters.get("en-GB"));
     }
 
 
@@ -154,9 +154,9 @@ public class ProductManager {
     }
 
 
-    public void printProductReport(int id) {
+    public void printProductReport(int id, String languageTag) {
         try {
-            printProductReport(findProduct(id));
+            printProductReport(findProduct(id), languageTag);
         } catch (ProductManagerException e) {
             logger.log(Level.INFO, e.getMessage());
         } catch (IOException e) {
@@ -164,7 +164,10 @@ public class ProductManager {
         }
     }
 
-    public void printProductReport(Product product) throws IOException {
+    public void printProductReport(Product product, String languageTag) throws IOException {
+
+
+        ResourceFormatter formatter = changeLocale(languageTag);
 
 
         List<Review> reviews = products.get(product);
@@ -196,7 +199,8 @@ public class ProductManager {
         System.out.println("Product report for " + product.getName() + " saved to " + productFile.toAbsolutePath());
     }
 
-    public void printProducts(Predicate<Product> filer, Comparator<Product> sorter) {
+    public void printProducts(Predicate<Product> filer, Comparator<Product> sorter, String languageTag) {
+        ResourceFormatter formatter = changeLocale(languageTag);
 
         StringBuilder txt = new StringBuilder();
 
@@ -328,7 +332,9 @@ public class ProductManager {
         return product;
     }
 
-    public Map<String, String> getDiscounts() {
+    public Map<String, String> getDiscounts(String languageTag) {
+
+        ResourceFormatter formatter = changeLocale(languageTag);
         return products.keySet()
                 .stream()
                 .collect(

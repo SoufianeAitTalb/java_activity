@@ -23,8 +23,6 @@ public class Shop {
             //calls will be add here
             log.append("\n-\tend of log\t-\n");
             log.append(pm.getDiscounts(languageTag).entrySet().stream().map(entry -> entry.getKey() + "\t" + entry.getValue()).collect(Collectors.joining("\n")));
-
-
             Product product = pm.reviewProduct(productId, Rating.FOUR_STAR, "Yet another review");
             log.append((product != null) ? "\nProduct " + productId + " reviewed \n" : "\nProduct " + productId + " not reviewed \n");
             pm.printProductReport(productId, languageTag, clientId);
@@ -41,8 +39,6 @@ public class Shop {
             List<Future<String>> results = executorService.invokeAll(clients);
             executorService.shutdown();
             results.stream().forEach(result -> {
-
-
                 try {
                     System.out.println(result.get());
                 } catch (InterruptedException | ExecutionException e) {
